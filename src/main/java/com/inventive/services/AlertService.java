@@ -1,105 +1,83 @@
 package com.inventive.services;
 
-import com.google.common.collect.ImmutableMap;
-import com.looker.rtl.AuthSession;
-import com.looker.rtl.ConfigurationProvider;
-import com.looker.rtl.SDKResponse;
-import com.looker.rtl.Transport;
-import com.looker.sdk.ApiSettings;
-import com.looker.sdk.LookerSDK;
-import com.looker.sdk.User;
-import com.looker.sdk.WriteQuery;
-import io.github.cdimascio.dotenv.Dotenv;
-import java.util.HashMap;
-import java.util.Map;
+import com.google.gson.JsonArray;
+import com.inventive.helpers.Constants;
+import com.inventive.helpers.RunInlineQueryParams;
+import com.inventive.helpers.WriteQueryBuilder;
 
-
+/**
+ * Executes a looker query and (optionally) sends an email communication.
+ *
+ * <p>The conditions, content, and frequency with which this service runs are
+ * largely faked here. In real life, this service would likely be deployed and run
+ * as a cron job and/or as a stream processor.
+ */
 public class AlertService {
 
-  private static final Long LIMIT = 10L;
-  private static final boolean APPLY_FORMATTING = false;
-  private static final boolean APPLY_VIS = false;
-  private static final boolean CACHE = true;
-  private static final String LOOK_ID = "3";
-  private static final String RESULT_FORMAT = "json";
-  private static final String NULL_CLIENT_ID = null;
-  private static final String NULL_DYNAMIC_FIELDS = null;
-  private static final Map<String, String> FILTERS =
-      ImmutableMap.of(
-          "order_items.sale_price", ">200",
-          "products.category", "Pants" );
-  private static final String[] FIELDS = new String[]{"order_items.sale_price", "products.category", "products.item_name"};
-  private static final String MODEL = "thelook_partner";
-  private static final String VIEW = "order_items";
+  private final EmailService emailService;
+  private final LookerService lookerService;
 
-  private LookerSDK sdk;
-  private static final String QUERY_TIME_ZONE = null;
+  public AlertService() {
+    this.emailService = new EmailService();
+    this.lookerService = new LookerService();
+  }
 
   public static void main(String[] args) {
+    // Initialize connections/services.
+    AlertService alertService = new AlertService();
+    LookerService lookerService = alertService.lookerService;
+    EmailService emailService = alertService.emailService;
     try {
-      new AlertService()
-          .configure()
-          .runCallMe();
+      // Retrieve results from looker.
+      JsonArray results = alertService.queryLooker();
+
+      // Optionally sent an email.
+      if (alertService.shouldNotify(results)) {
+        emailService.sendEmail(results);
+      }
+
+      // Logout and exit.
+      lookerService.logout();
     } catch(Error e) {
       e.printStackTrace();
     }
     System.exit(0);
   }
 
-  public AlertService configure() {
-    // Load settings from .env file into system properties.
-    // Java does not allow ENV variables to be overridden so
-    // system properties are used instead. System properties
-    // can also be passed in using -Dkey=value.
-    // Settings can also be passwed in using ini format.
-    Dotenv dotenv = Dotenv.load();
-    dotenv.entries().forEach(e -> System.setProperty(e.getKey(), e.getValue()));
-    // Set up the settings from system properties
-    ConfigurationProvider settings = ApiSettings.fromMap(new HashMap<>());
-    settings.readConfig();
-    AuthSession session = new AuthSession(settings, new Transport(settings));
-    sdk = new LookerSDK(session);
-    return this;
+  /**
+   * Retrieves a list of results from Looker.
+   *
+   * @apiNote This currently uses constant values. In real life, we'd need to
+   * record some preferences for each customer in order to retrieve the appropriate
+   * information.
+   */
+  public JsonArray queryLooker() {
+    return lookerService.runQueryAndGetJsonArray(
+        RunInlineQueryParams.newBuilder()
+            .setWriteQuery(
+                new WriteQueryBuilder()
+                    .setModel(Constants.MODEL)
+                    .setView(Constants.VIEW)
+                    .setFields(Constants.FIELDS)
+                    .setFilters(Constants.FILTERS)
+                    .setLimit(Constants.LIMIT))
+            .setResultFormat(Constants.RESULT_FORMAT_JSON)
+            .setCache(Constants.CACHE)
+            .setLimit(Constants.LIMIT)
+            .build());
   }
 
-  public AlertService runCallMe() {
-    User user = sdk.ok(sdk.me());
-    System.out.println("User name is " + user.getDisplay_name());
-
-    SDKResponse response =
-        sdk.run_inline_query("json", getWriteQuery(), LIMIT, APPLY_FORMATTING, APPLY_VIS, CACHE);
-    System.out.println("run_inline_query: " + response);
-    System.out.println("ok(run_inline_query): " + sdk.ok(response).toString());
-
-    SDKResponse runLookResponse = sdk.run_look(LOOK_ID, RESULT_FORMAT, LIMIT, APPLY_FORMATTING, APPLY_VIS, CACHE);
-    System.out.println("runLookResponse: " + runLookResponse);
-    System.out.println("ok(runLookResponse): " + sdk.ok(runLookResponse).toString());
-
-    SDKResponse logoutResponse = sdk.logout();
-    System.out.println("logoutResponse: " + logoutResponse);
-    return this;
-  }
-
-  private WriteQuery getWriteQuery() {
-    return new WriteQuery(
-        MODEL,
-        VIEW,
-        FIELDS,
-        /* pivots= */ null,
-        /* fillFields= */ null,
-        FILTERS,
-        /* filterExpressions= */ null,
-        /* sorts= */ null,
-        String.valueOf(LIMIT),
-        /* columnLimit= */ null,
-        /* total= */ null,
-        /* rowTotal= */ null,
-        /* subtotals= */ null,
-        /* visConfig= */ null,
-        /* filterConfig= */ null,
-        /* visibleUiSelections= */ null,
-        NULL_DYNAMIC_FIELDS,
-        NULL_CLIENT_ID,
-        QUERY_TIME_ZONE);
+  /**
+   * Returns a boolean indicating whether the specified results warrant
+   * an alert/email.
+   *
+   * @apiNote this method is stubbed out. Currently, our query returns the same
+   * information for each query because data doesn't change. In real life,
+   * the response would change and we'd need some mechanism to tell if we should
+   * notify the customer for any given update (e.g. we probably don't want to
+   * notify the same customer about the same pair of pants several times).
+   */
+  public boolean shouldNotify(JsonArray results) {
+    return true;
   }
 }
