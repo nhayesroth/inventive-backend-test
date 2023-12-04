@@ -6,9 +6,9 @@ import com.inventive.clients.LookerClient;
 import com.inventive.helpers.RunInlineQueryParams;
 
 /**
- * Service class for interacting with Looker backend.
+ * Service class for sending alerts/emails to customers.
  *
- * <p>Manages some additional things like object conversions.
+ * @apiNote Not implemented as of yet, obviously, just a stub.
  */
 public class EmailService {
 

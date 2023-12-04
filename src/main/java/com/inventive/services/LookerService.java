@@ -16,7 +16,11 @@ public class LookerService {
   private final LookerClient lookerClient;
 
   public LookerService() {
-    this.lookerClient = new LookerClient();
+    this(new LookerClient());
+  }
+
+  public LookerService(LookerClient lookerClient) {
+    this.lookerClient = lookerClient;
 
     // Verify the user is logged in.
     this.lookerClient.runCallMe();

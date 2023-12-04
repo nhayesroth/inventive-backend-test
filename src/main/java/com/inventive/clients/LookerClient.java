@@ -16,7 +16,6 @@ import java.util.HashMap;
 
 /** Thin client class for interacting with Looker. */
 public class LookerClient {
-  private static final String JSON_FORMAT = "json";
   private final LookerSDK sdk;
 
   public LookerClient() {
@@ -30,6 +29,7 @@ public class LookerClient {
     this.sdk = new LookerSDK(new AuthSession(settings, new Transport(settings)));
   }
 
+  /** Checks that the configured credentials are valid. */
   public User runCallMe() {
     System.out.println("Checking login credentials...");
     User user = sdk.ok(sdk.me());
@@ -37,6 +37,9 @@ public class LookerClient {
     return user;
   }
 
+  /**
+   * Runs an inline query based on the provided params.
+   */
   public String runInlineQuery(RunInlineQueryParams params) {
     System.out.println("run_inline_query request: " + params);
     SDKResponse response =
@@ -51,7 +54,12 @@ public class LookerClient {
     return sdk.ok(response);
   }
 
-  // Unused, but implemented since it was in the sample code.
+  /**
+   * Runs a "runLook" query based on the provided params
+   *
+   * @apiNote This method is unused as of yet, but it's included since
+   * it was present in the sample code.
+   */
   public String runLook(RunLookParams params) {
     System.out.println("run_look request: " + params);
     SDKResponse response =
@@ -66,6 +74,7 @@ public class LookerClient {
     return sdk.ok(response);
   }
 
+  /** Logs the current user out of looker. */
   public SDKResponse logout() {
     System.out.println("logging out...");
     SDKResponse response = sdk.logout();

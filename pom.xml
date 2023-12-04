@@ -95,9 +95,18 @@
         <artifactId>google-http-client-gson</artifactId>
         <version>1.43.3</version>
     </dependency>
-    <!-- implementation("com.google.http-client:google-http-client")
-    implementation("com.google.http-client:google-http-client-apache-v2")
-    implementation("com.google.http-client:google-http-client-gson") -->
+    <dependency>
+      <groupId>org.testng</groupId>
+      <artifactId>testng</artifactId>
+      <version>7.8.0</version>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+      <version>5.4.0</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
   <build>
     <plugins>

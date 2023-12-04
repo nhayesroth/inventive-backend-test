@@ -22,26 +22,45 @@ public class AlertService {
     this.lookerService = new LookerService();
   }
 
+  public AlertService(
+      EmailService emailService,
+      LookerService lookerService) {
+    this.emailService = emailService;
+    this.lookerService = lookerService;
+  }
+
   public static void main(String[] args) {
-    // Initialize connections/services.
-    AlertService alertService = new AlertService();
-    LookerService lookerService = alertService.lookerService;
-    EmailService emailService = alertService.emailService;
+    try {
+      new AlertService().queryAndNotify();
+    } catch(Error e) {
+      e.printStackTrace();
+    } finally {
+      System.exit(0);
+    }
+  }
+
+  /**
+   * Retrieves a list of results from Looker and optionally notifies the customer,
+   * depending on their configs (hypothetically).
+   */
+  public AlertService queryAndNotify() {
     try {
       // Retrieve results from looker.
-      JsonArray results = alertService.queryLooker();
+      JsonArray results = queryLooker();
 
       // Optionally sent an email.
-      if (alertService.shouldNotify(results)) {
+      if (shouldNotify(results)) {
         emailService.sendEmail(results);
       }
 
       // Logout and exit.
       lookerService.logout();
-    } catch(Error e) {
+    } catch (Error e) {
       e.printStackTrace();
+    } finally {
+      lookerService.logout();
+      return this;
     }
-    System.exit(0);
   }
 
   /**
@@ -51,7 +70,7 @@ public class AlertService {
    * record some preferences for each customer in order to retrieve the appropriate
    * information.
    */
-  public JsonArray queryLooker() {
+  private JsonArray queryLooker() {
     return lookerService.runQueryAndGetJsonArray(
         RunInlineQueryParams.newBuilder()
             .setWriteQuery(
@@ -77,7 +96,8 @@ public class AlertService {
    * notify the customer for any given update (e.g. we probably don't want to
    * notify the same customer about the same pair of pants several times).
    */
-  public boolean shouldNotify(JsonArray results) {
+  boolean shouldNotify(JsonArray results) {
+    if (results.isEmpty()) return false;
     return true;
   }
 }
